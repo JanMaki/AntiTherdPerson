@@ -1,6 +1,19 @@
 name: AntiThirdPerson
-version: 1.0.3
+version: 1.0.4
 main: site.jnmk.janmaki.Anti_ThirdPerson.Main
 author: JanMaki
 description: nya-
 api-version:  1.13
+
+commands:
+  antithirdperson:
+    aliases: atp
+    description: this plugin command.
+    usage: /atp
+    permission: atp.*
+    permission-message: §4Permission Error.
+
+permissions:
+  atp.*:
+    description: this plugin permission.
+    default: op

@@ -2,6 +2,9 @@ package site.jnmk.janmaki.Anti_ThirdPerson;
 
 import org.bukkit.*;
 import org.bukkit.block.Block;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
+import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.Listener;
@@ -20,6 +23,7 @@ import java.util.Set;
 
 public class Main extends JavaPlugin implements Listener {
     private Core core;
+    private FileConfiguration config;
 
     @Override
     public void onEnable(){
@@ -50,6 +54,22 @@ public class Main extends JavaPlugin implements Listener {
             return;
         }
         Bukkit.getPluginManager().registerEvents(this,this);
+        saveDefaultConfig();
+        config = getConfig();
+    }
+
+    @Override
+    public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
+        if (args.length == 0) {
+            sender.sendMessage(ChatColor.GREEN+"/atp reload");
+        }
+        if (args[0].equalsIgnoreCase("reload")){
+            reloadConfig();
+            sender.sendMessage(ChatColor.GREEN+"Reload config!");
+            return true;
+        }
+        sender.sendMessage(ChatColor.GREEN+"/atp reload");
+        return true;
     }
 
     private Map<Player, Set<Player>> map = new HashMap<>();
@@ -170,8 +190,7 @@ public class Main extends JavaPlugin implements Listener {
 
     private boolean checkBlock(Location location1,Location location2){
         boolean mainResult = false;
-        int acc = 12;
-
+        int acc = config.getInt("corners",12);
         for (int c = 0; c <= 360 ; c += 360/acc) {
             double i = Math.tan(Math.toRadians(c)) * 0.3 * Math.sqrt(2);
             double n = Math.sin(Math.toRadians(c)) * 0.3 * Math.sqrt(2);
@@ -198,11 +217,7 @@ public class Main extends JavaPlugin implements Listener {
             mainResult = mainResult || result;
         }
 
-
-
-
-
-        /*
+        /* Old
         for(double i = -0.3 ; i <= 0.3 ; i+=0.1) {
             for(double n = -0.3 ; n <= 0.3 ; n+=0.1) {
                 boolean result = true;
