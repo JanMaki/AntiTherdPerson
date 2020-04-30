@@ -1,9 +1,14 @@
 package site.jnmk.janmaki.Anti_ThirdPerson.Cores;
 
 import net.minecraft.server.v1_9_R2.*;
+import org.bukkit.craftbukkit.v1_9_R2.CraftEquipmentSlot;
 import org.bukkit.craftbukkit.v1_9_R2.entity.CraftPlayer;
 import org.bukkit.craftbukkit.v1_9_R2.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
+import org.bukkit.inventory.EquipmentSlot;
+
+import java.util.HashMap;
+import java.util.Map;
 
 public class Core_1_9 extends Core {
     @Override
@@ -22,17 +27,20 @@ public class Core_1_9 extends Core {
         entityPlayer.playerConnection.sendPacket(packet3);
         PacketPlayOutEntityHeadRotation packet4 = new PacketPlayOutEntityHeadRotation(entityHider,toByte(hider.getLocation().getYaw()));
         entityPlayer.playerConnection.sendPacket(packet4);
-        PacketPlayOutEntityEquipment head = new PacketPlayOutEntityEquipment(entityHider.getId(), EnumItemSlot.HEAD, CraftItemStack.asNMSCopy(hider.getInventory().getHelmet()));
-        entityPlayer.playerConnection.sendPacket(head);
-        PacketPlayOutEntityEquipment chest = new PacketPlayOutEntityEquipment(entityHider.getId(),EnumItemSlot.CHEST,CraftItemStack.asNMSCopy(hider.getInventory().getChestplate()));
-        entityPlayer.playerConnection.sendPacket(chest);
-        PacketPlayOutEntityEquipment legs = new PacketPlayOutEntityEquipment(entityHider.getId(),EnumItemSlot.LEGS,CraftItemStack.asNMSCopy(hider.getInventory().getLeggings()));
-        entityPlayer.playerConnection.sendPacket(legs);
-        PacketPlayOutEntityEquipment feet = new PacketPlayOutEntityEquipment(entityHider.getId(),EnumItemSlot.FEET,CraftItemStack.asNMSCopy(hider.getInventory().getBoots()));
-        entityPlayer.playerConnection.sendPacket(feet);
-        PacketPlayOutEntityEquipment mainHand = new PacketPlayOutEntityEquipment(entityHider.getId(),EnumItemSlot.MAINHAND,CraftItemStack.asNMSCopy(hider.getInventory().getItemInMainHand()));
-        entityPlayer.playerConnection.sendPacket(mainHand);
-        PacketPlayOutEntityEquipment offHand = new PacketPlayOutEntityEquipment(entityHider.getId(),EnumItemSlot.OFFHAND,CraftItemStack.asNMSCopy(hider.getInventory().getItemInOffHand()));
-        entityPlayer.playerConnection.sendPacket(offHand);
+        Map<EquipmentSlot, ItemStack> items = new HashMap<>();
+        items.put(EquipmentSlot.HAND, CraftItemStack.asNMSCopy(hider.getInventory().getItemInMainHand()));
+        items.put(EquipmentSlot.OFF_HAND, CraftItemStack.asNMSCopy(hider.getInventory().getItemInOffHand()));
+        items.put(EquipmentSlot.CHEST, CraftItemStack.asNMSCopy(hider.getInventory().getChestplate()));
+        items.put(EquipmentSlot.HEAD, CraftItemStack.asNMSCopy(hider.getInventory().getHelmet()));
+        items.put(EquipmentSlot.LEGS, CraftItemStack.asNMSCopy(hider.getInventory().getLeggings()));
+        items.put(EquipmentSlot.FEET, CraftItemStack.asNMSCopy(hider.getInventory().getBoots()));
+        for (EquipmentSlot equipmentSlot: EquipmentSlot.values()){
+            PacketPlayOutEntityEquipment equipmentPacket = new PacketPlayOutEntityEquipment(entityHider.getId(), CraftEquipmentSlot.getNMS(equipmentSlot), items.get(equipmentSlot));
+            entityPlayer.playerConnection.sendPacket(equipmentPacket);
+        }
+        PacketPlayOutPlayerInfo infoPacket = new PacketPlayOutPlayerInfo(PacketPlayOutPlayerInfo.EnumPlayerInfoAction.ADD_PLAYER, entityHider);
+        entityPlayer.playerConnection.sendPacket(infoPacket);
+        PacketPlayOutEntityMetadata metadataPacket = new PacketPlayOutEntityMetadata(entityHider.getId(), entityHider.getDataWatcher(), true);
+        entityPlayer.playerConnection.sendPacket(metadataPacket);
     }
 }

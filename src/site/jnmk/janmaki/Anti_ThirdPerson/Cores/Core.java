@@ -7,7 +7,7 @@ public abstract class  Core {
 
     public abstract void showPlayer(Player player,Player hider);
 
-    byte toByte(float yaw_pitch) {
+    protected byte toByte(float yaw_pitch) {
         return (byte) ((int)(yaw_pitch * 256.0f / 360.0f));
     }
 }

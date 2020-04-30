@@ -1,16 +1,16 @@
 package site.jnmk.janmaki.Anti_ThirdPerson.Cores;
 
-import net.minecraft.server.v1_10_R1.*;
-import org.bukkit.craftbukkit.v1_10_R1.CraftEquipmentSlot;
-import org.bukkit.craftbukkit.v1_10_R1.entity.CraftPlayer;
-import org.bukkit.craftbukkit.v1_10_R1.inventory.CraftItemStack;
+import net.minecraft.server.v1_15_R1.*;
+import org.bukkit.craftbukkit.v1_15_R1.CraftEquipmentSlot;
+import org.bukkit.craftbukkit.v1_15_R1.entity.CraftPlayer;
+import org.bukkit.craftbukkit.v1_15_R1.inventory.CraftItemStack;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.EquipmentSlot;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class Core_1_10 extends Core {
+public class Core_1_15 extends Core {
     @Override
     public void hidePlayer(Player player, Player hider) {
         PacketPlayOutEntityDestroy packet = new PacketPlayOutEntityDestroy(((CraftPlayer)hider).getHandle().getId());

@@ -24,7 +24,7 @@ import java.util.Set;
 public class Main extends JavaPlugin implements Listener {
     private Core core;
     private FileConfiguration config;
-
+    // Overrides!!
     @Override
     public void onEnable(){
         String version = Bukkit.getServer().getVersion();
@@ -49,8 +49,12 @@ public class Main extends JavaPlugin implements Listener {
         else if (version.contains("1.14")){
             core = new Core_1_14();
         }
+        else if (version.contains("1.15")){
+            core = new Core_1_15();
+        }
         else {
-            Bukkit.getConsoleSender().sendMessage(ChatColor.RED+"This plugin is not supported in this server's version");
+            Bukkit.getConsoleSender().sendMessage(ChatColor.RED+"This plugin is not supported in this server's version.");
+            Bukkit.getPluginManager().disablePlugin(this);
             return;
         }
         Bukkit.getPluginManager().registerEvents(this,this);
@@ -61,21 +65,23 @@ public class Main extends JavaPlugin implements Listener {
     @Override
     public boolean onCommand(CommandSender sender, Command command, String label, String[] args) {
         if (args.length == 0) {
-            sender.sendMessage(ChatColor.GREEN+"/atp reload");
+            sender.sendMessage(ChatColor.GREEN+"Usage: /atp reload");
+            return true;
         }
         if (args[0].equalsIgnoreCase("reload")){
             reloadConfig();
             sender.sendMessage(ChatColor.GREEN+"Reload config!");
             return true;
         }
-        sender.sendMessage(ChatColor.GREEN+"/atp reload");
+        sender.sendMessage(ChatColor.GREEN+"Usage: /atp reload");
         return true;
     }
 
+    // Functions!!
     private Map<Player, Set<Player>> map = new HashMap<>();
     private Map<Player,Map<Way,Double>> locationsMap = new HashMap<>();
     private enum Way{
-        X,Y,Z;
+        X,Y,Z
     }
 
     @EventHandler
@@ -146,24 +152,29 @@ public class Main extends JavaPlugin implements Listener {
         if (player1.getWorld() != player2.getWorld()){
             return;
         }
-        boolean mainResult = checkBlock(location1,location2);
-        double height = 1.8;
-        for (double i = 0.1 ; i <= height ; i += 0.1){
-            location2.add(0,0.1,0);
-            mainResult = mainResult || checkBlock(location1,location2);
-        }
-        if (mainResult){
-            if (checkMap(player1,player2)){
-                if  (!player2.isDead()) {
-                    core.showPlayer(player1, player2);
-                    map.remove(player1);
+        new BukkitRunnable(){
+            @Override
+            public void run() {
+                boolean mainResult = checkBlock(location1,location2);
+                double height = 1.8;
+                for (double i = 0.1 ; i <= height ; i += 0.1){
+                    location2.add(0,0.1,0);
+                    mainResult = mainResult || checkBlock(location1,location2);
+                }
+                if (mainResult){
+                    if (checkMap(player1,player2)){
+                        if  (!player2.isDead()) {
+                            core.showPlayer(player1, player2);
+                            map.remove(player1);
+                        }
+                    }
+                }
+                else {
+                    addMap(player1,player2);
+                    core.hidePlayer(player1, player2);
                 }
             }
-        }
-        else {
-            addMap(player1,player2);
-            core.hidePlayer(player1, player2);
-        }
+        }.runTaskAsynchronously(this);
     }
 
     private void addMap(Player player1,Player player2){
@@ -216,35 +227,6 @@ public class Main extends JavaPlugin implements Listener {
             }
             mainResult = mainResult || result;
         }
-
-        /* Old
-        for(double i = -0.3 ; i <= 0.3 ; i+=0.1) {
-            for(double n = -0.3 ; n <= 0.3 ; n+=0.1) {
-                boolean result = true;
-                Location location3 = new Location(location2.getWorld(),location2.getX()+i,location2.getY(),location2.getZ()+n);
-                Vector pos1 = location1.toVector();
-                Vector pos2 = location3.toVector();
-                Vector vector = pos2.clone().subtract(pos1).normalize().multiply(0.1);
-                double distance = location1.distance(location3);
-                if (distance > 50){
-                    continue;
-                }
-                for (double covered = 0; covered < distance; pos1.add(vector)) {
-                    covered += 0.1;
-                    Block block = (new Location(location1.getWorld(),pos1.getX(),pos1.getY(), pos1.getZ())).getBlock();
-                    if (block.isLiquid() || block.getType().isTransparent() || !(block.getType().isOccluding())){
-                        continue;
-                    }
-                    if (block.getType() != Material.AIR){
-                        result = false;
-                        break;
-                    }
-                }
-                mainResult = mainResult || result;
-            }
-        }
-         */
         return mainResult;
     }
-
 }
