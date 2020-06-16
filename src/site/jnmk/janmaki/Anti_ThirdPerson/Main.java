@@ -13,17 +13,16 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.plugin.java.JavaPlugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.bukkit.scheduler.BukkitTask;
 import org.bukkit.util.Vector;
 import site.jnmk.janmaki.Anti_ThirdPerson.Cores.*;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 public class Main extends JavaPlugin implements Listener {
     private Core core;
     private FileConfiguration config;
+
     // Overrides!!
     @Override
     public void onEnable(){
@@ -60,6 +59,13 @@ public class Main extends JavaPlugin implements Listener {
         Bukkit.getPluginManager().registerEvents(this,this);
         saveDefaultConfig();
         config = getConfig();
+        if (!config.contains("corners")){
+            config.set("corners",12);
+        }
+        if (!config.contains("run_async")){
+            config.set("run_async",true);
+        }
+        saveConfig();
     }
 
     @Override
@@ -78,8 +84,8 @@ public class Main extends JavaPlugin implements Listener {
     }
 
     // Functions!!
-    private Map<Player, Set<Player>> map = new HashMap<>();
-    private Map<Player,Map<Way,Double>> locationsMap = new HashMap<>();
+    private final Map<Player, Set<Player>> map = new HashMap<>();
+    private final Map<Player,Map<Way,Double>> locationsMap = new HashMap<>();
     private enum Way{
         X,Y,Z
     }
@@ -137,7 +143,19 @@ public class Main extends JavaPlugin implements Listener {
         }
     }
 
+    private final Map<UUID[], BukkitTask> tasks = new HashMap<>();
     private void invUpdate(Player player1,Player player2) {
+        UUID[] uuidArray = new UUID[2];
+        uuidArray[0] = player1.getUniqueId();
+        uuidArray[1] = player2.getUniqueId();
+        for (UUID[] key: tasks.keySet()){
+            if (key[0].equals(uuidArray[0]) && key[1].equals(uuidArray[1])){
+                BukkitTask bukkitTask = tasks.get(key);
+                bukkitTask.cancel();
+                tasks.remove(key);
+                break;
+            }
+        }
         Location location1 = player1.getEyeLocation();
         Location location2 = player2.getLocation();
         if (player1.getGameMode() == GameMode.CREATIVE || player1.getGameMode() == GameMode.SPECTATOR ){
@@ -152,29 +170,27 @@ public class Main extends JavaPlugin implements Listener {
         if (player1.getWorld() != player2.getWorld()){
             return;
         }
-        new BukkitRunnable(){
-            @Override
-            public void run() {
-                boolean mainResult = checkBlock(location1,location2);
-                double height = 1.8;
-                for (double i = 0.1 ; i <= height ; i += 0.1){
-                    location2.add(0,0.1,0);
-                    mainResult = mainResult || checkBlock(location1,location2);
-                }
-                if (mainResult){
-                    if (checkMap(player1,player2)){
-                        if  (!player2.isDead()) {
-                            core.showPlayer(player1, player2);
-                            map.remove(player1);
-                        }
+        BukkitTask task = runTask(() -> {
+            boolean mainResult = checkBlock(location1,location2);
+            double height = 1.8;
+            for (double i = 0.1 ; i <= height ; i += 0.1){
+                location2.add(0,0.1,0);
+                mainResult = mainResult || checkBlock(location1,location2);
+            }
+            if (mainResult){
+                if (checkMap(player1,player2)){
+                    if  (!player2.isDead()) {
+                        core.showPlayer(player1, player2);
+                        map.remove(player1);
                     }
                 }
-                else {
-                    addMap(player1,player2);
-                    core.hidePlayer(player1, player2);
-                }
             }
-        }.runTaskAsynchronously(this);
+            else {
+                addMap(player1,player2);
+                core.hidePlayer(player1, player2);
+            }
+        },config.getBoolean("run_async", true));
+        tasks.put(uuidArray, task);
     }
 
     private void addMap(Player player1,Player player2){
@@ -202,9 +218,9 @@ public class Main extends JavaPlugin implements Listener {
     private boolean checkBlock(Location location1,Location location2){
         boolean mainResult = false;
         int acc = config.getInt("corners",12);
-        for (int c = 0; c <= 360 ; c += 360/acc) {
-            double i = Math.tan(Math.toRadians(c)) * 0.3 * Math.sqrt(2);
-            double n = Math.sin(Math.toRadians(c)) * 0.3 * Math.sqrt(2);
+        for (int c = 365; c > 0 ; c -= 365/acc) {
+            double i = 0.3 * Math.cos(Math.toRadians(c));
+            double n = 0.3 * Math.sin(Math.toRadians(c));
             boolean result = true;
             Location location3 = new Location(location2.getWorld(),location2.getX()+i,location2.getY(),location2.getZ()+n);
             Vector pos1 = location1.toVector();
@@ -228,5 +244,13 @@ public class Main extends JavaPlugin implements Listener {
             mainResult = mainResult || result;
         }
         return mainResult;
+    }
+
+    private BukkitTask runTask(Runnable runnable, boolean isAsync){
+        if (isAsync) {
+            return Bukkit.getScheduler().runTaskAsynchronously(this, runnable);
+        }else {
+            return Bukkit.getScheduler().runTask(this, runnable);
+        }
     }
 }
